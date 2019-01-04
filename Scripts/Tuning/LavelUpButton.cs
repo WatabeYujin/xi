@@ -4,137 +4,175 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class LavelUpButton : MonoBehaviour {
-    enum Mode
-    {
-        Status,
-        Stick,
-        Dash,
-        Snipe
-    }
-    [SerializeField]
-    private Mode mode;
-
-    [SerializeField]
+    
     private int nodeID;
 
     private string nodePointName;
-    [SerializeField]
-    private int nodePoint;
-    
-    private int nodeLevel;
 
+    [SerializeField]
     private NodeData nodeData;
 
     [SerializeField]
     private Text nodeText;
-
-    private SavaScriptableObject2 saveData;
-    private string savedataPath = "SaveData";
-
-    void Start() {
-        saveData = Resources.Load(savedataPath) as SavaScriptableObject2;
-    }
-
-    void NodeStatusGet() {
-        GetSetData(true);
-    }
+    SaveScriptableObject2 saveData;
 
     public void LevelUp() {
-        NodeStatusGet();
-        if (nodePoint++ > nodeData.nodelist[nodeID].maxLevel) return;
-        if (nodeLevel < 0) return;
+        if (!NodePointCheck(true)) return;
+        
+        LevelChange(true);
     }
 
     public void LevelDown() {
-        NodeStatusGet();
-        if (nodePoint-- < nodeData.nodelist[nodeID].minLevel) return;
+        if (!NodePointCheck(false)) return;
         LevelChange(false);
     }
 
+    /// <summary>
+    /// レベル変更処理を行う
+    /// </summary>
+    /// <param name="isLevelUP">上昇させる場合true</param>
     void LevelChange(bool isLevelUP)
     {
-        if (isLevelUP) {
-            nodePoint--;
-            nodeLevel++;
-            GetSetData(false);
+        switch (nodeData.mode)
+        {
+            case NodeData.Mode.Status:
+                if (isLevelUP)
+                {
+                    saveData.statusNode[nodeID].LevelUp();
+                    saveData.statusNodePoint--;
+                }
+                else
+                {
+                    saveData.statusNode[nodeID].LevelDown();
+                    saveData.statusNodePoint++;
+                }
+                break;
+            case NodeData.Mode.Straight:
+                if (isLevelUP)
+                {
+                    saveData.straightNode[nodeID].LevelUp();
+                    saveData.straightNodePoint--;
+                }
+                else
+                {
+                    saveData.straightNode[nodeID].LevelDown();
+                    saveData.straightNodePoint++;
+                }
+                break;
+            case NodeData.Mode.Flick:
+                if (isLevelUP)
+                {
+                    saveData.flickDodgeNode[nodeID].LevelUp();
+                    saveData.flickDodgeNodePoint--;
+                }
+                else
+                {
+                    saveData.flickDodgeNode[nodeID].LevelDown();
+                    saveData.flickDodgeNodePoint++;
+                }
+                break;
+            case NodeData.Mode.Snipe:
+                if (isLevelUP)
+                {
+                    saveData.snipeCannonNode[nodeID].LevelUp();
+                    saveData.snipeCannonNodePoint--;
+                }
+                else
+                {
+                    saveData.snipeCannonNode[nodeID].LevelDown();
+                    saveData.snipeCannonNodePoint++;
+                }
+                break;
         }
-        else {
-            nodePoint++;
-            nodeLevel--;
-            GetSetData(false);
-        }
-        Text nodePointText = GameObject.Find("NodePointText").GetComponent<Text>();
         TextSet();
+        saveData.isChanged=true;
     }
 
-    public void NodeDataSet(NodeData m_nodeData,int m_nodeID) {
-        GetSetData(false);
+    public void NodeDataSet(NodeData m_nodeData,int m_nodeID, SaveScriptableObject2 m_savedata) {
 
+        saveData = m_savedata;
         nodeData = m_nodeData;
         nodeID = m_nodeID;
-        nodePointName = "NodeLevel" + mode.ToString();
-        NodeStatusGet();
+        nodePointName = "NodeLevel" + nodeData.mode.ToString();
         TextSet();
 
     }
 
     void TextSet() {
-
-        nodeText.text = nodeData.nodelist[nodeID].nodeName.ToString() + "　Lv：" + nodePoint.ToString();
-    }
-
-    void GetSetData(bool isGet)
-    {
-        switch (mode)
+        string m_level="";
+        switch (nodeData.mode)
         {
-            case Mode.Status:
-                if (isGet)
-                {
-                    nodeLevel = saveData.statusNode[nodeID].GetLevel;
-                    nodePoint = saveData.statusNodePoint;
+            case NodeData.Mode.Status:
+                m_level = saveData.statusNode[nodeID].GetLevel.ToString();
+                break;
+            case NodeData.Mode.Straight:
+                m_level = saveData.straightNode[nodeID].GetLevel.ToString();
+                break;
+            case NodeData.Mode.Flick:
+                m_level = saveData.flickDodgeNode[nodeID].GetLevel.ToString();
+                break;
+            case NodeData.Mode.Snipe:
+                m_level = saveData.snipeCannonNode[nodeID].GetLevel.ToString();
+                break;
+        }
+
+        nodeText.text = nodeData.nodelist[nodeID].nodeName.ToString() + "　Lv：" + m_level;
+    }
+    
+
+    /// <summary>
+    /// ノードポイントが割り振り可能か調べる
+    /// </summary>
+    /// <param name="isUpper">レベルを上昇させる場合trueに</param>
+    /// <returns>割り振り可能であればtrueを返す</returns>
+    bool NodePointCheck(bool isUpper)
+    {
+        switch (nodeData.mode)
+        {
+            case NodeData.Mode.Status:
+                if (isUpper) {
+                    if (saveData.statusNodePoint <= 0) return false;
+                    return true;
                 }
                 else
                 {
-                    saveData.straightNode[nodeID].SetLevel=nodeLevel;
-                    saveData.statusNodePoint = nodePoint;
+                    if (saveData.statusNode[nodeID].GetLevel <= 0) return false;
+                    return true;
                 }
-                break;
-            case Mode.Stick:
-                if (isGet)
+            case NodeData.Mode.Straight:
+                if (isUpper)
                 {
-                    nodeLevel = saveData.straightNode[nodeID].GetLevel;
-                    nodePoint = saveData.straightNodePoint;
+                    if (saveData.straightNodePoint < 0) return false;
+                    return true;
+                }else
+                {
+                    if (saveData.straightNode[nodeID].GetLevel <= 0) return false;
+                    return true;
+                }
+            case NodeData.Mode.Flick:
+                if (isUpper)
+                {
+                    if (saveData.flickDodgeNodePoint < 0) return false;
+                    return true;
                 }
                 else
                 {
-                    saveData.straightNode[nodeID].SetLevel = nodeLevel;
-                    saveData.straightNodePoint = nodePoint;
+                    if (saveData.flickDodgeNode[nodeID].GetLevel <= 0) return false;
+                    return true;
                 }
-                break;
-            case Mode.Dash:
-                if (isGet)
+            case NodeData.Mode.Snipe:
+                if (isUpper)
                 {
-                    nodeLevel = saveData.flickDodgeNode[nodeID].GetLevel;
-                    nodePoint = saveData.flickDodgeNodePoint;
+                    if (saveData.snipeCannonNodePoint < 0) return false;
+                    return true;
                 }
                 else
                 {
-                    saveData.flickDodgeNode[nodeID].SetLevel = nodeLevel;
-                    saveData.flickDodgeNodePoint = nodePoint;
+                    if (saveData.snipeCannonNode[nodeID].GetLevel <= 0) return false;
+                    return true;
                 }
-                break;
-            case Mode.Snipe:
-                if (isGet)
-                {
-                    nodeLevel = saveData.straightNode[nodeID].GetLevel;
-                    nodePoint = saveData.snipeCannonNodePoint;
-                }
-                else
-                {
-                    saveData.snipeCannonNode[nodeID].SetLevel = nodeLevel;
-                    saveData.snipeCannonNodePoint = nodePoint;
-                }
-                break;
+            default:
+                return false;
         }
     }
 }

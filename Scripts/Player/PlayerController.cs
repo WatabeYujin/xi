@@ -208,10 +208,16 @@ public class PlayerController : Status
     /// <param name="moveRotate">移動方向</param>
     void Move(Vector2 moveRotate)
     {
+        float m_magnification = 1;
+        if (StraightShotTriggerCheck())
+        {
+            m_magnification = m_magnification / 2;
+            if (save.straightNode[11].GetLevel > 0)
+                m_magnification *= save.straightNode[11].GetLevel / 10;
+        }
         Vector3 m_move = new Vector3(moveRotate.x, 0, moveRotate.y);
         playerRigidbody.velocity =
             m_move * xiStatus.moveSpeed;
-        
     }
 
     /// <summary>
@@ -301,11 +307,19 @@ public class PlayerController : Status
         }
         lastShotTime = Time.time;
         Vibration.Vibrate(vibrateTime);     //バイブレーション
-        Transform m_bullet=BulletShot(shotbullet, stickWeponSpawn);
         if (sniperMode)
+        {
+            Transform m_bullet = BulletShot(shotbullet, stickWeponSpawn);
             m_bullet.GetComponent<SnipeBullet>().SetStatus(snipeCanonStatus);
+        }
         else
-            m_bullet.GetComponent<StickWeponBullet>().SetStatus(straightWeponStatus);
+        {
+            for(int i = -1;i<Pellet();i++)
+            {
+                Transform m_bullet = BulletShot(shotbullet, stickWeponSpawn);
+                m_bullet.GetComponent<StickWeponBullet>().SetStatus(straightWeponStatus);
+            }
+        }
     }
 
 
@@ -336,7 +350,7 @@ public class PlayerController : Status
         return m_bullet;
     }
 
-    ///////////////////////////////スティックウェポン関係///////////////////////////////
+    ///////////////////////////////ストレートウェポン関係///////////////////////////////
 
     /// <summary>
     /// 射撃入力の検知
@@ -348,6 +362,12 @@ public class PlayerController : Status
 #endif
         if (CrossPlatformInputManager.GetButton(straightShotButton)) return true;
         else return false;
+    }
+
+    //散弾ノード用の処理
+    int Pellet()
+    {
+        return save.straightNode[5].GetLevel;
     }
 
     ///////////////////////////////フリック入力関連///////////////////////////////

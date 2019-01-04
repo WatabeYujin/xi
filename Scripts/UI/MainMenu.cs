@@ -8,8 +8,12 @@ public class MainMenu : MonoBehaviour {
     private GameObject nowOpenMenu;
     [SerializeField]
     private FadeInOut fadeInOut;
+    [SerializeField]
+    private SaveData saveData;
+    [SerializeField]
+    private SaveScriptableObject2 saveScriptableObject2;
 
-    
+
 
     public void OpenClose(GameObject openObj) {
         StartCoroutine(MenuOpen(openObj));
@@ -24,5 +28,6 @@ public class MainMenu : MonoBehaviour {
         fadeInOut.FadeOutEvent(m_fadeTime);
         yield return new WaitForSeconds(m_fadeTime);
         nowOpenMenu = openObject;
+        if(saveScriptableObject2.isChanged) saveData.Save();
     }
 }

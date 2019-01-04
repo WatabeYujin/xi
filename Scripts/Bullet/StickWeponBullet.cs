@@ -107,7 +107,7 @@ public class StickWeponBullet : Status
     /// 命中時の処理
     /// </summary>
     void HitEvent() {
-        hitCollider.GetComponent<Life>().Damage(straightWeponStatus.damage);
+        hitCollider.GetComponent<Life>().Damage(straightWeponStatus.GetDamage());
     }
     public void SetStatus(StraightWeponStatus value)
     {

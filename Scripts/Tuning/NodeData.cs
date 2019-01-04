@@ -2,23 +2,34 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu]
+[CreateAssetMenu(menuName = "MyScriptableObject/NodeData")]
 public class NodeData : ScriptableObject {
 
     [System.Serializable]
     public class NodeList
     {
         public string nodeName;
-        public int lavel;
-        public int minLevel = -100;
-        public int maxLevel = 100;  
+        public string nodeDetails;
+        public string GetNodeName
+        {
+            get
+            {
+                return nodeName;
+            }
+        }
+        public string GetNodeDetails
+        {
+            get
+            {
+                return nodeDetails;
+            }
+        }
     }
     public enum Mode
     {
         Status,
-        Stick,
-        Rockon,
-        Dash,
+        Straight,
+        Flick,
         Snipe
     }
     public Mode mode;

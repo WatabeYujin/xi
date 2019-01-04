@@ -11,10 +11,10 @@ public class TalkControl : MonoBehaviour {
     private AudioSource callSE;
 
     private IEnumerator talkIEnumerator;
-    private SavaScriptableObject2 savaScriptableObject;
+    private SaveScriptableObject2 saveScriptableObject;
 
-    void Awale() {
-        savaScriptableObject = Resources.Load("SaveData")as SavaScriptableObject2;
+    void Awake() {
+        saveScriptableObject = Resources.Load("SaveData")as SaveScriptableObject2;
     }
 
     public void TalkSet(string talkText,float talkSpeed,float talkPich,float talkvalue,bool isShowToast)
@@ -33,7 +33,7 @@ public class TalkControl : MonoBehaviour {
     {
         const string m_playerCode = "[%p]";
 
-        string m_playerName = savaScriptableObject.playerName;
+        string m_playerName = saveScriptableObject.playerName;
         if (!checkText.Contains(m_playerCode)) return checkText;
         return checkText.Replace(m_playerCode, m_playerName);
     }
@@ -58,12 +58,12 @@ public class TalkControl : MonoBehaviour {
     {
         if (pauseStatus)
         {
-            //AndroidPlugin.StopTextToSpeech();
+            AndroidPlugin.StopTextToSpeech();
         }
     }
 
     private void OnApplicationQuit()
     {
-        //AndroidPlugin.StopTextToSpeech();
+        AndroidPlugin.StopTextToSpeech();
     }
 }

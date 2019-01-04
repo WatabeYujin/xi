@@ -21,14 +21,14 @@ public class FirstGameEvent : MonoBehaviour {
     [SerializeField]
     private SaveData saveData;
 
-    private SavaScriptableObject2 savaScriptableObject;
+    private SaveScriptableObject2 savaScriptableObject;
 
     [RuntimeInitializeOnLoadMethod]
     void Start () {
         saveData.Load();
         image = GetComponent<Image>();
-        savaScriptableObject = Resources.Load("SaveData") as SavaScriptableObject2;
-        if (saveData.Load() && savaScriptableObject.playerName != "")
+        savaScriptableObject = Resources.Load("SaveData") as SaveScriptableObject2;
+        if (savaScriptableObject.playerName != "")
         {
             Debug.Log(savaScriptableObject.name);
             StartTalk();
