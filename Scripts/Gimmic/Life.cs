@@ -21,7 +21,15 @@ public class Life : MonoBehaviour {
     [SerializeField]
     private TalkControl talkControl;
 
+    [SerializeField]
+    private List<Renderer> renderers;
+    [SerializeField]
+    private List<Color> emmisionColors;
+
+    private string emmisionColor = "_EmissionColor";
+
     void Start () {
+        GetRenederer();
         maxLife = lifePoint;
     }
 
@@ -34,6 +42,7 @@ public class Life : MonoBehaviour {
         if (damage < 0) return;
         if (damage - defense <= 0) damage = 1;
         lifePoint -= damage;
+        StartCoroutine(DamageFlashEffect(Color.white));
         if (lifePoint <= 0){
             lifePoint = 0;
             Dead();
@@ -46,6 +55,7 @@ public class Life : MonoBehaviour {
     public void Heal(int healPoint) {
         if (healPoint < 0) return;
         lifePoint += healPoint;
+        StartCoroutine(DamageFlashEffect(Color.green));
         if (lifePoint >= maxLife) lifePoint = maxLife;
         if (mode != Mode.Player) return;
         LifeAlret();
@@ -148,5 +158,29 @@ public class Life : MonoBehaviour {
             }
         }
         else life50 = false;
+    }
+
+    private void GetRenederer()
+    {
+        foreach (Renderer m_renderer in GetComponentsInChildren<Renderer>())
+        {
+            if (!m_renderer.material.HasProperty(emmisionColor))
+                return;
+            renderers.Add(m_renderer);
+            emmisionColors.Add(m_renderer.material.GetColor(emmisionColor));
+        }
+    }
+
+    IEnumerator DamageFlashEffect(Color flashColor)
+    {
+        foreach(Renderer m_renderer in renderers)
+        {
+            m_renderer.material.SetColor(emmisionColor,Color.white);
+        }   
+        yield return new WaitForEndOfFrame();
+        for (int i=0;i<renderers.Count;i++)
+        {
+            renderers[i].material.SetColor(emmisionColor, emmisionColors[i]);
+        }
     }
 }

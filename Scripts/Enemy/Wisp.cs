@@ -24,9 +24,11 @@ public class Wisp : MonoBehaviour {
     private Vector3 firstPos;
     private float firstRadius;
     private ParticleSystem.MainModule particleMain;
+    private PlayerController playerController;
 
     void Start()
     {
+        playerController = PlayerController.playerController;
         firstPos = transform.position;
         playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
         firstRadius = sphereCollider.radius;
@@ -36,12 +38,14 @@ public class Wisp : MonoBehaviour {
 
     void Update()
     {
+        if (!playerController.GetSetisActive)
+            return;
         Move();
     }
 
     void Move()
     {
-        float m_speed = speed / (float)life.GetLife();
+        float m_speed = speed / ((float)life.GetLife()/2);
         transform.LookAt(Look());
         thisRigidbody.velocity= transform.forward * m_speed;
     }
@@ -67,12 +71,13 @@ public class Wisp : MonoBehaviour {
     void Damage()
     {
         particleMain.maxParticles-=2;
+        
         SizeChange();
     }
 
     void SizeChange()
     {
-        const float minRadiusSize = 0.4f;
+        const float minRadiusSize = 0.7f;
         float m_size = (float)life.GetLife() / (float)life.GetMaxLife();
         if (m_size < minRadiusSize) m_size = minRadiusSize;
         
@@ -85,5 +90,9 @@ public class Wisp : MonoBehaviour {
         if (Time.time - lastAttackTime < m_attackInterval) return;
         lastAttackTime = Time.time;
         col.GetComponent<Life>().Damage(damage);
+        if (Random.Range(0, 4) != 0)
+            return;
+        life.Damage(1);
+        Damage();
     }
 }

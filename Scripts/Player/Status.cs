@@ -4,11 +4,11 @@ using UnityEngine;
 
 public class Status : MonoBehaviour {
 
-    protected SaveScriptableObject2 save;
-    protected XiStatus xiStatus;
-    protected StraightWeponStatus straightWeponStatus;
-    protected FlickDodgeStatus flickDodgeStatus;
-    protected SnipeCanonStatus snipeCanonStatus;
+    public SaveScriptableObject2 save;
+    public XiStatus xiStatus;
+    public StraightWeponStatus straightWeponStatus;
+    public FlickDodgeStatus flickDodgeStatus;
+    public SnipeCanonStatus snipeCanonStatus;
     void Awake()
     {
         save = Resources.Load("SaveData") as SaveScriptableObject2;
@@ -27,10 +27,11 @@ public class Status : MonoBehaviour {
              save = value;
         }
         public int killCount = 0;       //キルカウント数
-        public float moveSpeed = 10;    //移動速度
-        public float rotateSpeed = 270; //旋回速度
+        public float moveSpeed = 6f;    //移動速度
+        public float shotermoveSpeed = 3f;    //移動速度
+        public float rotateSpeed = 250; //旋回速度
         public Vector3 cameraPosition =
-            new Vector3(0, 14, -5);     //カメラ座標
+            new Vector3(0, 16, -5);     //カメラ座標
         public int helth = 100;         //体力値
     }
 
@@ -66,11 +67,13 @@ public class Status : MonoBehaviour {
         {
             save = value;
         }
-        public int dodgeCount = 3;          //使用回数
-        public int maxDodgeCount = 3;       //最大使用数
-        public float recastTime = 2;        //現在のリキャストタイム
-        public float maxRecastTime = 2;     //最大リキャストタイム
-        public float usedCoolDownTime = 0.5f;//使用回数のクールダウン開始までの時間
+        public int dodgeCount = 3;              //使用回数
+        public int maxDodgeCount = 3;           //最大使用数
+        public float recastTime = 2;            //現在のリキャストタイム
+        public float maxRecastTime = 2;         //最大リキャストタイム
+        public float usedCoolDownTime = 0.5f;   //使用回数のクールダウン開始までの時間
+        public float flickDashRange = 10f;       //最大移動距離
+        public int flickAttack = 75;            //通過した敵へのダメージ
     }
 
     //スナイプカノンステータス

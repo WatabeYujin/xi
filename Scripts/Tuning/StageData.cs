@@ -8,9 +8,17 @@ public class StageData : ScriptableObject
     [System.Serializable]
     public class StageList
     {
-        public string stageName;
-        public string stageDetails;
-        public int[][] stageGimics;
+        [SerializeField]
+        private string stageName = "";          //ステージ名
+        [SerializeField,TextArea(1,3)]
+        private string stageDetails ="";        //ステージの詳細
+        [SerializeField]
+        private CreateStageData createstagedata;//読み込むステージのデータ
+        [SerializeField]
+        private int stageRunk = 0;              //受注可能なステージのランク
+        [SerializeField]
+        private bool isRunkUpMission = false;
+
         public string GetNodeName
         {
             get
@@ -25,6 +33,20 @@ public class StageData : ScriptableObject
                 return stageDetails;
             }
         }
+        public CreateStageData GetStageData
+        {
+            get
+            {
+                return createstagedata;
+            }
+        }
+        public int GetStageRunk
+        {
+            get
+            {
+                return stageRunk;
+            }
+        }
     }
-    public StageList[] nodelist;
+    public StageList[] stageList;
 }

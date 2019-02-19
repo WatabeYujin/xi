@@ -3,13 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class EnemyAction : MonoBehaviour {
-    [SerializeField]
-    private NavMeshAgent navMeshAgent;
+public class EnemyAction : ObjectPool
+{
     [SerializeField]
     private EnemyActionPattern enemyActionPattern;
-    [SerializeField]
-    private Transform[] patrolPoint;
     [SerializeField]
     private GameObject shotBullet;
     [SerializeField]
@@ -18,14 +15,20 @@ public class EnemyAction : MonoBehaviour {
     private Transform shotTransform;
     [SerializeField]
     private float findRange = 50;
+    [SerializeField]
+    private float speed = 10;
+    [SerializeField]
+    private float angularSpeed = 90;
 
     [SerializeField]
     private Rigidbody thisRigidbody;
-
+    [SerializeField]
     private bool isFind = false;
     private float lastShotTime;
     private int nowPatrolPoint = 0;
-    private Transform playerTransform;
+    [SerializeField]
+    private PlayerController playerController;
+    private Vector3 spawnPos;
 
     enum EnemyActionPattern
     {
@@ -35,17 +38,28 @@ public class EnemyAction : MonoBehaviour {
         Satellite
     }
 
-    void Start() {
-        playerTransform = GameObject.FindGameObjectWithTag("Player").transform;
-        if (patrolPoint.Length == 0) return;
-        navMeshAgent.SetDestination(patrolPoint[0].position);
+    void OnEnable() {
+        if(playerController==null)
+            playerController = PlayerController.playerController;
     }
 
     void Update () {
+        if (!playerController.GetSetisActive)
+            return;
         ShotCheck();
-        AIPattern();
-        Find(FindCheck());
-	}
+        isFind = FindCheck();
+        if (isFind)
+            AIPattern();
+        else
+            ReturnSpawnPosition();
+
+
+    }
+
+    void ReturnSpawnPosition()
+    {
+        Chase(spawnPos);
+    }
 
     void ShotCheck() {
         if (!AttackRateCheck()) return;
@@ -55,9 +69,7 @@ public class EnemyAction : MonoBehaviour {
 
     Transform BulletShot(GameObject shotBullet, Transform shotTransform)
     {
-        Transform m_bullet = Instantiate(shotBullet).transform;
-        m_bullet.position = shotTransform.position;
-        m_bullet.forward = shotTransform.forward;
+        Transform m_bullet = Objectspawn(shotBullet, shotTransform.position, shotTransform.rotation).transform;
         return m_bullet;
     }
 
@@ -68,81 +80,67 @@ public class EnemyAction : MonoBehaviour {
     }
 
     void AIPattern() {
-        if (!isFind) {
-            Patrol();
-            return;
-        }
         switch (enemyActionPattern)
         {
             case EnemyActionPattern.Stop:
-                Stop();
+
                 break;
             case EnemyActionPattern.Rotate:
-                Rotate();
+                Rotate(playerController.transform.position);
                 break;
             case EnemyActionPattern.Chase:
-                Chase();
+                Chase(playerController.transform.position);
                 break;
             case EnemyActionPattern.Satellite:
-                Satellite();
+                Satellite(playerController.transform.position);
                 break;
             default:
                 break;
         }
     }
 
-    void Patrol() {
-        if (patrolPoint.Length == 0) return;
-        if (navMeshAgent.isStopped)
-            navMeshAgent.isStopped = false;
-        Vector3 m_pos = patrolPoint[nowPatrolPoint].position;
-        if (Vector3.Distance(transform.position, m_pos) > navMeshAgent.stoppingDistance) return;
-        nowPatrolPoint++;
-        if (nowPatrolPoint >= patrolPoint.Length)
-            nowPatrolPoint = 0;
-        navMeshAgent.SetDestination(patrolPoint[nowPatrolPoint].position);
+    void Rotate(Vector3 targetPos) {
+        const float m_rotateAdjustment = 360f;
+        Vector3 m_lookPos = new Vector3(targetPos.x,transform.position.y, targetPos.z) - transform.position;
+        Quaternion m_quaternion = Quaternion.LookRotation(m_lookPos, Vector3.up);
+        m_quaternion = Quaternion.Lerp(transform.rotation, m_quaternion, angularSpeed/ m_rotateAdjustment);
+        transform.rotation = m_quaternion;
     }
 
-    void Stop() {
-        if (!navMeshAgent.isStopped)
-            navMeshAgent.isStopped = true;
-    }
-
-    void Rotate() {
-        if (!navMeshAgent.isStopped)
-            navMeshAgent.isStopped = true;
-        const float m_rotateAdjustment = 3600;
-        Vector3 newRotation = playerTransform.position - transform.position;
-        
-        transform.rotation = Quaternion.Slerp(transform.rotation, 
-            Quaternion.LookRotation(new Vector3(newRotation.x, 0, newRotation.z)), navMeshAgent.angularSpeed / m_rotateAdjustment);
-    }
-
-    void Chase() {
-        if(navMeshAgent.isStopped)
-            navMeshAgent.isStopped = false;
-        navMeshAgent.SetDestination(playerTransform.position);
+    void Chase(Vector3 targetPos) {
+        Rotate(targetPos);
+        thisRigidbody.velocity = transform.forward * speed;
     }
 
     /// <summary>
     /// プレイヤーを中心に軸回転するAI
     /// 一定距離より近ければ離れる
     /// </summary>
-    void Satellite() {
-        Rotate();
+    void Satellite(Vector3 targetPos) {
+        Rotate(targetPos);
         Vector3 m_moveVelocity = new Vector3(0,0,0);
-        if((transform.position - playerTransform.position).magnitude > findRange )
+        if((transform.position - playerController.transform.position).magnitude > findRange/2 )
             m_moveVelocity += transform.forward * -1;
         m_moveVelocity += transform.right * 5;
-        thisRigidbody.velocity = m_moveVelocity * navMeshAgent.speed;
+        thisRigidbody.velocity = m_moveVelocity * speed;
     }
-
-    public void Find(bool isfind) {
-        isFind = isfind;
-    }
-
+    
     bool FindCheck() {
-        if ((transform.position - playerTransform.position).magnitude > findRange) return false;
+
+        if ((transform.position - playerController.transform.position).magnitude > findRange)
+            return false;
+        Ray m_ray = new Ray(transform.position, playerController.transform.position-transform.position);
+        RaycastHit hit;
+        int m_layermask = 1 << gameObject.layer;
+        if (!Physics.Raycast(m_ray, out hit, findRange, ~m_layermask))
+            return false;
+        if (hit.transform != playerController.transform)
+            return false;
         return true;
+    }
+
+    public void SetSpaenPos(Vector3 pos)
+    {
+        spawnPos = pos;
     }
 }

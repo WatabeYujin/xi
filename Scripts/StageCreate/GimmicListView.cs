@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class GimmicListView : MonoBehaviour {
@@ -38,6 +39,9 @@ public class GimmicListView : MonoBehaviour {
             case 3:
                 m_gimmicType = GimmicData.GimmicType.Item;
                 break;
+            case 4:
+                m_gimmicType = GimmicData.GimmicType.Required;
+                break;
             default:
                 m_gimmicType = GimmicData.GimmicType.None;
                 break;
@@ -51,10 +55,10 @@ public class GimmicListView : MonoBehaviour {
         {
             Destroy(spawn);
         }
-        for(int i=0;i<gimmicData.gimmicList.Length;i++)
+        for(int i=1;i<gimmicData.gimmicList.Length-1;i++)
         {
             //関数で表示するか非表示か確かめる
-            if(!isView(gimmicType,i))
+            if(!isView(gimmicType, i))
                 continue;   //非表示の場合次のリストを調べる
 
             GameObject m_nodeObj = Instantiate(gimmicViewContent, gimmicViewList);
@@ -63,10 +67,12 @@ public class GimmicListView : MonoBehaviour {
             //ラムダ式だとすべての値が変更されてしまう為
             int m_id = i;
             //ラムダ式でないと引数付きイベントが設定できないので
-            m_nodeObj.GetComponent<Button>().onClick.AddListener(() => { stageCreateController.GimmicButton(m_id); });
+            //m_nodeObj.GetComponent<Button>().onClick.AddListener(() => { stageCreateController.GimmicButton(m_id); });
+            EventTrigger.Entry entry = new EventTrigger.Entry();
+            entry.eventID = EventTriggerType.PointerDown; //PointerClickの部分は追加したいEventによって変更してね
+            entry.callback.AddListener((x) => { stageCreateController.GimmicButton(m_id); });  //ラムダ式の右側は追加するメソッドです。
+            m_nodeObj.GetComponent<EventTrigger>().triggers.Add(entry);
         }
-
-
     }
 
     /// <summary>

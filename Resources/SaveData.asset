@@ -97,7 +97,7 @@ MonoBehaviour:
   flickDodgeNodeAmountPoint: 5
   snipeCannonNodePoint: 5
   snipeCannonNodeAmountPoint: 5
-  gimmicPossession: 010101010101010101
+  gimmicPossession: 00000000000000000000
   missionProgress: 0
   playerName: 
   isChanged: 0

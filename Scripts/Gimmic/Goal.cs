@@ -7,12 +7,13 @@ public class Goal : MonoBehaviour {
     [SerializeField]
     private string moveScene;
     [SerializeField]
-    private bool lastAct = false;
-    [SerializeField]
-    private int upgradePoint=3;
+    private StageCreateController stageCreateController;
 
     void OnTriggerEnter(Collider col) {
         if (col.tag != "Player") return;
-        col.GetComponent<ResultEvent>().Goal(moveScene,lastAct,transform.position, upgradePoint);
+        if (stageCreateController==null)
+            col.GetComponent<ResultEvent>().Goal(transform.position);
+        else
+            stageCreateController.StageMenuOpenCloase(false);
     }
 }

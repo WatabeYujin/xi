@@ -19,8 +19,10 @@ public class TalkControl : MonoBehaviour {
 
     public void TalkSet(string talkText,float talkSpeed,float talkPich,float talkvalue,bool isShowToast)
     {
-#if UNITY_ANDROID
-        talkText=talkStringCheck(talkText);
+#if UNITY_EDITOR
+        return ;
+#elif UNITY_ANDROID
+        talkText =talkStringCheck(talkText);
         callSE.Stop();
         if(talkIEnumerator!= null) StopCoroutine(talkIEnumerator);
         talkIEnumerator = null;
@@ -42,6 +44,7 @@ public class TalkControl : MonoBehaviour {
     {
         callSE.Play();
         yield return new WaitForSeconds(0.1f);
+
 #if UNITY_ANDROID
         AndroidPlugin.AddTextToSpeechSpeed(talkSpeed);
         AndroidPlugin.AddTextToSpeechPitch(talkPich-1);

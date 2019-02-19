@@ -2,64 +2,61 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class StickWeponBullet : ObjectPool
+public class EnemyBullet : ObjectPool
 {
     [SerializeField]
     private Rigidbody thisRigidbody;                //弾のRigidbody
     [SerializeField]
     private TrailRenderer trailRenderer;            //弾のTrailRenderer
     [SerializeField]
-    private string targetTagName = "Enemy";         //敵のtag名
+    private string targetTagName = "Player";         //敵のtag名
     [SerializeField]
-    private string shooterTagName = "Player";       //プレイヤーのtag名  
+    private string[] noDeleteTags = { "Enemy" };           //判定に含まないtag  
     [SerializeField]
     private GameObject hitEffect;                   //命中時のエフェクト
-
-
-    private Status.StraightWeponStatus straightWeponStatus;
+    [SerializeField]
+    private int damage = 5;
+    [SerializeField]
+    private float bulletspeed=10;
+    [SerializeField]
+    private float bulletdistance = -1;              //射程(-1の場合距離判定なし)
     private Vector3 bulletSpawnPosition;            //弾の発射地点
+
     private bool isDestroy = false;                 //弾が消失するモードに入っているか
     private Collider hitCollider;                   //命中した対象のCollider
-
     private void OnEnable()
     {
         isDestroy = false;
-        trailRenderer.Clear();
+        SpawnPositionSet();
+        StartBulletMove();
+        if (trailRenderer!=null)
+            trailRenderer.Clear();
     }
 
     /// <summary>
     /// 弾の発射地点を取得
     /// </summary>
-    void SpawnPositionSet() {
+    void SpawnPositionSet()
+    {
         bulletSpawnPosition = transform.position;
     }
 
     /// <summary>
     /// 弾の移動を開始させる処理
     /// </summary>
-    void StartBulletMove() {
+    void StartBulletMove()
+    {
         const float m_baseBulletSpeed = 100;
 
         if (thisRigidbody == null) return;
-
-        thisRigidbody.AddForce(
-            transform.forward * straightWeponStatus.bulletSpeed * m_baseBulletSpeed +
-            transform.right * Recoil()  * m_baseBulletSpeed /2
-        );
-    }
-
-    /// <summary>
-    /// 弾の反動計算
-    /// </summary>
-    /// <returns>ブレの大きさ（float）を返す</returns>
-    float Recoil() {
-        if (straightWeponStatus.recoil == 0) return 0;
-        return Random.Range(-straightWeponStatus.recoil, straightWeponStatus.recoil)/2f ;
+            thisRigidbody.AddForce(
+                transform.forward * bulletspeed* m_baseBulletSpeed
+            );
     }
     
-    void Update() {
-        if (straightWeponStatus == null)
-            return;
+
+    void Update()
+    {
         if (BulletRangeCheck())
             StartCoroutine(BulletDelete());
     }
@@ -70,7 +67,9 @@ public class StickWeponBullet : ObjectPool
     /// <returns>射程内ならfalse 射程外ならtrueを返す</returns>
     bool BulletRangeCheck()
     {
-        if ((transform.position - bulletSpawnPosition).magnitude >= straightWeponStatus.bulletRange)
+        if (bulletdistance == -1)
+            return false;
+        if ((transform.position - bulletSpawnPosition).magnitude >= bulletdistance)
             return true;
         else return false;
     }
@@ -94,19 +93,24 @@ public class StickWeponBullet : ObjectPool
         Transform m_hitEffect = Objectspawn(hitEffect, transform.position, transform.rotation).transform;
     }
 
-    void OnTriggerEnter(Collider col) {
+    void OnTriggerEnter(Collider col)
+    {
         hitCollider = col;
-        if(!isDestroy)
+        if (!isDestroy)
             TargetTagCheck();
     }
 
     /// <summary>
     /// 命中相手のtagが条件に当てはまるか確かめる
     /// </summary>
-    void TargetTagCheck() {
+    void TargetTagCheck()
+    {
         if (hitCollider.tag == "Event") return;
-        if (hitCollider.tag == shooterTagName) return;
-        if (hitCollider.tag == this.tag) return;
+        foreach(string tags in noDeleteTags)
+        {
+            if (hitCollider.tag == tags) return;
+        }
+        if (hitCollider.tag == "Bullet") return;
         if (hitCollider.tag == targetTagName) HitEvent();
         EffectSpawn();
         StartCoroutine(BulletDelete());
@@ -115,13 +119,8 @@ public class StickWeponBullet : ObjectPool
     /// <summary>
     /// 命中時の処理
     /// </summary>
-    void HitEvent() {
-        hitCollider.GetComponent<Life>().Damage(straightWeponStatus.GetDamage());
-    }
-    public void SetStatus(Status.StraightWeponStatus value)
+    void HitEvent()
     {
-        straightWeponStatus = value;
-        SpawnPositionSet();
-        StartBulletMove();
+        hitCollider.GetComponent<Life>().Damage(damage);
     }
 }

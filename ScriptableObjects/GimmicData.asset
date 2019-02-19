@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb8b0b2e2c078064caabe509e7811530, type: 3}
+  m_Name: GimmicData
+  m_EditorClassIdentifier: Assembly-CSharp::GimmicData
+  gimmicList:
+  - gimmicName: "\u524A\u9664\u30E2\u30FC\u30C9"
+    gimmicType: 0
+    cost: 0
+    gimmicDetails: "\u30AE\u30DF\u30C3\u30AF\u3092\u6D88\u53BB\u3057\u3001\u306A\u306B\u3082\u306A\u3044\u5E8A\u306B\u3059\u308B\u3002"
+    gimmicImage: {fileID: 0}
+    gimmicPrefub: {fileID: 0}
+  - gimmicName: "\u958B\u59CB\u5730\u70B9"
+    gimmicType: 3
+    cost: 0
+    gimmicDetails: "\u3053\u306E\u30B9\u30C6\u30FC\u30B8\u306E\u30B9\u30BF\u30FC\u30C8\u5730\u70B9\u30FB\u5FC5\u9808\u306E\u30AE\u30DF\u30C3\u30AF\u300C"
+    gimmicImage: {fileID: 21300000, guid: 44469e3d4d128864bb0adb3eff1c09f1, type: 3}
+    gimmicPrefub: {fileID: 0}
+  - gimmicName: "\u30B4\u30FC\u30EB\u5730\u70B9"
+    gimmicType: 3
+    cost: 0
+    gimmicDetails: "\u30B9\u30C6\u30FC\u30B8\u306E\u30B4\u30FC\u30EB\u5730\u70B9\u30FB\u5FC5\u9808\u306E\u30AE\u30DF\u30C3\u30AF"
+    gimmicImage: {fileID: 21300000, guid: afd0a08779ef720499ff7ed40484020b, type: 3}
+    gimmicPrefub: {fileID: 0}
+  - gimmicName: "\u901A\u5E38\u58C1"
+    gimmicType: 0
+    cost: 0
+    gimmicDetails: "\u306A\u3093\u3066\u3053\u3068\u306E\u7121\u3044\u58C1"
+    gimmicImage: {fileID: 21300000, guid: 08e39b430bd924e459ac044fbcaae478, type: 3}
+    gimmicPrefub: {fileID: 1963962111526330, guid: 8593763d48d7e104e9f70cf07b93de9f,
+      type: 2}
+  - gimmicName: "\u30D6\u30FC\u30D3\u30FC"
+    gimmicType: 1
+    cost: 10
+    gimmicDetails: "\u76F4\u7DDA\u4E0A\u306E\u30D7\u30EC\u30A4\u30E4\u30FC\u3092\u653B\u6483\u3057\u7D9A\u3051\u308B\u30A8\u30CD\u30DF\u30FC"
+    gimmicImage: {fileID: 21300000, guid: 2d8183fb6c6a4e94ba768c84dc9b7f04, type: 3}
+    gimmicPrefub: {fileID: 1492647890035772, guid: 167de4f31ca1cbc40b479b8d3afb09e3,
+      type: 2}
+  - gimmicName: "\u30B3\u30E2\u30F3\u30C9\u30ED\u30FC\u30F3"
+    gimmicType: 1
+    cost: 5
+    gimmicDetails: "\u8FD1\u3065\u3044\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u306B\u63A5\u8FD1\u3057\u5C04\u6483\u653B\u6483\u3092\u884C\u3046\u3002 "
+    gimmicImage: {fileID: 21300000, guid: e17bc820154a2ab4b890dc72e59cfae6, type: 3}
+    gimmicPrefub: {fileID: 1868443562345812, guid: af70f525624b7ed45a6b5ac4312890cc,
+      type: 2}
+  - gimmicName: "\u30BB\u30F3\u30C8\u30EA"
+    gimmicType: 1
+    cost: 5
+    gimmicDetails: "\u8FD1\u3065\u3044\u305F\u30D7\u30EC\u30A4\u30E4\u30FC\u3092\u81EA\u52D5\u3067\u5C04\u6483\u3059\u308B\u3002\u7BC4\u56F2\u5916\u306B\u306F\u7121\u529B\u3002 "
+    gimmicImage: {fileID: 21300000, guid: d9911ac04f3a0994c8bf18890c700c59, type: 3}
+    gimmicPrefub: {fileID: 1907398150402498, guid: a3a4f8bb0fad9a6478e56a7183102542,
+      type: 2}
+  - gimmicName: "\u30DC\u30AA\u30EB"
+    gimmicType: 1
+    cost: 4
+    gimmicDetails: "\u63A5\u8FD1\u3057\u3001\u89E6\u308C\u308B\u3053\u3068\u3067\u30C0\u30E1\u30FC\u30B8\u3068\u306A\u308B\u6575\u3002\u89E6\u308C\u308B\u3068\u6D88\u5931\u3059\u308B\u304C\u610F\u5916\u306B\u3082\u30C0\u30E1\u30FC\u30B8\u306F\u7D50\u69CB\u75DB\u3044\u3002 "
+    gimmicImage: {fileID: 21300000, guid: 74a133cf49b0fa0429aa4d93c74da86f, type: 3}
+    gimmicPrefub: {fileID: 1652793933657788, guid: e0322d2282c3fb54297abe2bef0d1e2e,
+      type: 2}
+  - gimmicName: "\u30A6\u30A3\u30B9\u30D7 "
+    gimmicType: 0
+    cost: 10
+    gimmicDetails: "\u63A5\u8FD1\u3057\u3001\u89E6\u308C\u3066\u3044\u308B\u9593\u30C0\u30E1\u30FC\u30B8\u3092\u4E0E\u3048\u7D9A\u3051\u308B\u3002\u4F53\u529B\u304CHit\u56DE\u6570\u5236\u3067\u4F53\u529B\u5024\u306B\u5FDC\u3058\u3066\u6A5F\u52D5\u529B\u3082\u5909\u5316\u3002 "
+    gimmicImage: {fileID: 21300000, guid: 321c989da638f53409c309fe0af2073a, type: 3}
+    gimmicPrefub: {fileID: 1406668710242602, guid: 68d001229fff0f642abf831b3ed254b4,
+      type: 2}
+  - gimmicName: 
+    gimmicType: 0
+    cost: 0
+    gimmicDetails: 
+    gimmicImage: {fileID: 0}
+    gimmicPrefub: {fileID: 0}

@@ -1,17 +1,21 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System;
 using System.IO;
 
 public class SaveData : MonoBehaviour
 {
     [SerializeField]
     private DefaultScriptableObject defaultScriptableObject;
-    private string filePath;
+    private string savefilePath;
+    private string stagesavefilePath;
+    [SerializeField]
     private SaveScriptableObject2 saveScriptableObject;
+    [SerializeField]
+    private CreateStageData createStageData;
     private string savedataPath = "SaveData";
+    private string stagedataPath = "CreateStage";
+    private int stageID = 0;
     [SerializeField]
     private NodeData[] nodeDatas = new NodeData[4];
     [SerializeField]
@@ -38,35 +42,71 @@ public class SaveData : MonoBehaviour
         public string playerName;                       //プレイヤーの名前
         public int flagCredit;                          //通貨
     }
-    
+
+    public class FromJsonStageData
+    {
+        public int[] gimmicID = new int[100];      //配置されているギミックのID
+        public int[] gimmicRotate = new int[100];  //配置されているギミックの角度
+        public int totalCost = 0;                      //ステージの総コスト
+        public string stageName;                       //ステージ名
+        public string stageDetails;                    //ステージ詳細
+        public bool isEdit = true;
+    }
 
     void Awake()
     {
         saveScriptableObject = Resources.Load(savedataPath) as SaveScriptableObject2;
-        filePath = UnityEngine.Application.persistentDataPath+@"/"+savedataPath+".json";
+        savefilePath = UnityEngine.Application.persistentDataPath+@"/"+savedataPath+".json";
+        Debug.Log(savefilePath);
+        stagesavefilePath = UnityEngine.Application.persistentDataPath + @"/" + stagedataPath;
         if (DataCheck()) Load();
         else DataInitialization();
     }
 
-    public void Save()
+    public void Save(int saveMode=-1)
     {
         FileStream m_file = FileOpen(FileMode.Open, FileAccess.ReadWrite);
         //更新されたのデータを書き込む
-        string m_json = JsonUtility.ToJson(saveScriptableObject);
-        Debug.Log(m_json);
-        File.WriteAllText(filePath, m_json);
+        if (saveMode == -1)
+        {
+            string m_json = JsonUtility.ToJson(saveScriptableObject);
+            Debug.Log(m_json);
+            File.WriteAllText(savefilePath, m_json);
+            saveScriptableObject.isChanged = false;
+        }
+        else if(saveMode >= 0 || saveMode <= 2)
+        {
+            string m_json = JsonUtility.ToJson(createStageData);
+            Debug.Log(m_json);
+            File.WriteAllText(stagesavefilePath + saveMode +".json", m_json);
+        }
+        else
+        {
+            Debug.Log("不正な値です");
+            return;
+        }
         Debug.Log("セーブ成功");
-        saveScriptableObject.isChanged = false;
     }
 
-    public void Load()
+    public void Load(int saveMode = -1)
     {
         FileStream m_file = FileOpen(FileMode.Open, FileAccess.Read);
-        string m_json = File.ReadAllText(filePath);
-        Debug.Log(m_json);
-        FromJsonSaveData m_saveClass = JsonUtility.FromJson<FromJsonSaveData>(m_json);
-        saveScriptableObject.UpdateScriptableObject(m_saveClass);
-        ElementSet();
+        if (saveMode == -1)
+        {
+            string m_json = File.ReadAllText(savefilePath);
+            Debug.Log(m_json);
+            FromJsonSaveData m_saveClass = JsonUtility.FromJson<FromJsonSaveData>(m_json);
+            saveScriptableObject.UpdateScriptableObject(m_saveClass);
+            ElementSet();
+        }
+        else if (saveMode >= 0 || saveMode <= 2)
+        {
+            string m_json = File.ReadAllText(stagesavefilePath + saveMode + ".json");
+            Debug.Log(m_json);
+            FromJsonStageData m_saveClass = JsonUtility.FromJson<FromJsonStageData>(m_json);
+            createStageData.UpdateScriptableObject(m_saveClass);
+
+        }
         Debug.Log("ロード成功");
     }
 
@@ -82,7 +122,7 @@ public class SaveData : MonoBehaviour
         //デフォルトのデータを書き込む
         string m_json = JsonUtility.ToJson(defaultScriptableObject);
         Debug.Log(m_json);
-        File.WriteAllText(filePath, m_json);
+        File.WriteAllText(savefilePath, m_json);
         saveScriptableObject.DefaultLoadData(defaultScriptableObject);
         ElementSet();
         Scene m_nowScene = SceneManager.GetActiveScene();
@@ -96,7 +136,7 @@ public class SaveData : MonoBehaviour
     /// <returns>セーブデータがある場合trueを返す</returns>
     public bool DataCheck()
     {
-        if(System.IO.File.Exists(filePath))
+        if(System.IO.File.Exists(savefilePath))
             return true;
         else
             return false;
@@ -108,7 +148,7 @@ public class SaveData : MonoBehaviour
     /// </summary>
     public void DeleteSaveData()
     {
-        File.Delete(filePath);
+        File.Delete(savefilePath);
         Debug.LogWarning("削除処理完了");
         DataInitialization();
     }
@@ -126,7 +166,7 @@ public class SaveData : MonoBehaviour
         try
         {
             //ファイルを取得、存在しなければエラーを返す
-            m_file = File.Open(filePath, filemode, fileAccess);
+            m_file = File.Open(savefilePath, filemode, fileAccess);
         }
         catch (IOException m_error)
         {
@@ -149,8 +189,6 @@ public class SaveData : MonoBehaviour
         }
         return m_file;
     }
-
-    
 
     /// <summary>
     /// 要素数の更新
@@ -177,7 +215,7 @@ public class SaveData : MonoBehaviour
             {
                 saveScriptableObject.snipeCannonNode.Add(new NodeDataClass());
             }
-        if (saveScriptableObject.gimmicPossession.Count - 1 > gimmicDatas.gimmicList.Length)
+        if (saveScriptableObject.gimmicPossession.Count - 1 < gimmicDatas.gimmicList.Length)
             for (int n = saveScriptableObject.gimmicPossession.Count; saveScriptableObject.gimmicPossession.Count < gimmicDatas.gimmicList.Length; n++)
             {
                 saveScriptableObject.gimmicPossession.Add(new bool());

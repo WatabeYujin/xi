@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
+using UnityEngine.AI;
 using UnityStandardAssets.CrossPlatformInput;
 using UnityEngine.EventSystems;
 
-
-public class PlayerController : Status
+public class PlayerController : ObjectPool
 {
-
     [SerializeField]
     private Rigidbody playerRigidbody;                  //プレイヤーのRigidBody
     [SerializeField]
@@ -49,6 +49,16 @@ public class PlayerController : Status
     private TalkControl talkControl;                    //会話システム
     [SerializeField]
     private Text[] lifeText = new Text[2];              //ライフポイントのtext
+    [SerializeField]
+    private GameObject[] isActiveObject;
+    [SerializeField]
+    private Status status;                              //ステータス情報
+    [SerializeField]
+    private bool isActive = true;                       //エネミーが動ける状態
+    [SerializeField]
+    private FlickEffect flickeffect;                    //フリックエフェクト発生用のプログラム
+
+    public static PlayerController playerController;
 
     private const string moveHorizontal = "Horizontal1";//移動スティックの水平
     private const string moveVertical = "Vertical1";    //移動スティックの垂直
@@ -72,16 +82,26 @@ public class PlayerController : Status
     private int slideFingerID = -1;
     private Vector2 snipeTouchBeginPos=new Vector2(-999,-999);
     private int snipeTouchBeginID = -1;
-    
+
+
+
+    void Awake() {
+        playerController = this;
+    }
+
     void Start() {
         Application.targetFrameRate = 60;       //目標FPSを60に
         SetAutorotate();
-        life.SetMaxLife(xiStatus.helth);
+        life.SetMaxLife(status.xiStatus.helth);
         FirstFlickUISetting();
+        if (!isActive)
+            return;
         FirstTalk();
     }
 
     void Update () {
+        if (!isActive)
+            return;
         SnipeBulletCountPrint();
         FlickUIPrint();
         CameraMove();
@@ -94,7 +114,7 @@ public class PlayerController : Status
         NomalCameraInitialization();
         MoveCheck();
         PlayerRotateCheck();
-        ShotCheck(stickWeponBullet, straightWeponStatus.fireRate-save.straightNode[13].GetLevel, 0);
+        ShotCheck(stickWeponBullet, status.straightWeponStatus.fireRate- status.save.straightNode[13].GetLevel, 0);
         CoolDown(true,!sniperMode);
         FlickCheck();
         ShotAnimation();
@@ -133,25 +153,25 @@ public class PlayerController : Status
     {
         float m_time = Time.deltaTime;
         if (isDodge &&
-            flickDodgeStatus.dodgeCount < flickDodgeStatus.maxDodgeCount)
+            status.flickDodgeStatus.dodgeCount < status.flickDodgeStatus.maxDodgeCount)
         {
-            flickDodgeStatus.recastTime -= m_time;
-            if (flickDodgeStatus.recastTime < 0)
+            status.flickDodgeStatus.recastTime -= m_time;
+            if (status.flickDodgeStatus.recastTime < 0)
             {
-                flickDodgeStatus.dodgeCount++;
-                flickDodgeStatus.recastTime = flickDodgeStatus.maxRecastTime;
+                status.flickDodgeStatus.dodgeCount++;
+                status.flickDodgeStatus.recastTime = status.flickDodgeStatus.maxRecastTime;
             }
         }
         if (!sniperMode &&
-            snipeCanonStatus.bulletCount < snipeCanonStatus.maxBulletCount &&
-            snipeCanonStatus.recastTime > 0)
+            status.snipeCanonStatus.bulletCount < status.snipeCanonStatus.maxBulletCount &&
+            status.snipeCanonStatus.recastTime > 0)
         {
-            snipeCanonStatus.recastTime -= m_time;
-            ReCastView(snipeRecastImage, snipeCanonStatus.recastTime, snipeCanonStatus.maxRecastTime);
-            if (snipeCanonStatus.recastTime <= 0)
+            status.snipeCanonStatus.recastTime -= m_time;
+            ReCastView(snipeRecastImage, status.snipeCanonStatus.recastTime, status.snipeCanonStatus.maxRecastTime);
+            if (status.snipeCanonStatus.recastTime <= 0)
             {
-                snipeCanonStatus.bulletCount++;
-                snipeCanonStatus.recastTime = snipeCanonStatus.maxRecastTime;
+                status.snipeCanonStatus.bulletCount++;
+                status.snipeCanonStatus.recastTime = status.snipeCanonStatus.maxRecastTime;
             }
         }
     }
@@ -181,28 +201,6 @@ public class PlayerController : Status
     }
 
     /// <summary>
-    /// 移動関連
-    /// </summary>
-    public void MoveCheck()
-    {
-#if UNITY_EDITOR
-        Vector2 m_moveRotate = Vector2.zero;
-        if (Input.GetKey(KeyCode.W))
-            m_moveRotate += Vector2.up;
-        else if(Input.GetKey(KeyCode.S))
-            m_moveRotate -= Vector2.up;
-        if (Input.GetKey(KeyCode.D))
-            m_moveRotate += Vector2.right;
-        else if (Input.GetKey(KeyCode.A))
-            m_moveRotate -= Vector2.right;
-#elif UNITY_ANDROID
-        Vector2 m_moveRotate = GetPlayerMoveAxis();
-#endif
-        MoveAnimation(m_moveRotate);
-        Move(m_moveRotate);
-    }
-
-    /// <summary>
     /// 移動処理
     /// </summary>
     /// <param name="moveRotate">移動方向</param>
@@ -212,22 +210,30 @@ public class PlayerController : Status
         if (StraightShotTriggerCheck())
         {
             m_magnification = m_magnification / 2;
-            if (save.straightNode[11].GetLevel > 0)
-                m_magnification *= save.straightNode[11].GetLevel / 10;
+            if (status.save.straightNode[11].GetLevel > 0)
+                m_magnification *= status.save.straightNode[11].GetLevel / 10;
         }
         Vector3 m_move = new Vector3(moveRotate.x, 0, moveRotate.y);
-        playerRigidbody.velocity =
-            m_move * xiStatus.moveSpeed;
+        if (!StraightShotTriggerCheck())
+        {
+            playerRigidbody.velocity =
+                m_move * status.xiStatus.moveSpeed;
+        }else
+        {
+            playerRigidbody.velocity =
+                m_move * status.xiStatus.shotermoveSpeed;
+        }
     }
 
     /// <summary>
     /// カメラの移動処理
     /// </summary>
     void CameraMove() {
-        playerCameraTransform.position =
-            new Vector3(xiStatus.cameraPosition.x + transform.position.x,
-                        xiStatus.cameraPosition.y,
-                        xiStatus.cameraPosition.z + transform.position.z);
+        Vector3 m_cameraPos= new Vector3(status.xiStatus.cameraPosition.x + transform.position.x,
+                        status.xiStatus.cameraPosition.y,
+                        status.xiStatus.cameraPosition.z + transform.position.z);
+        playerCameraTransform.DOMove(m_cameraPos, 0.7f).SetEase(Ease.Unset);
+        //playerCameraTransform.position = m_cameraPos;
     }
 
     /// <summary>
@@ -262,7 +268,7 @@ public class PlayerController : Status
         transform.eulerAngles =
             Vector3.up * Mathf.MoveTowardsAngle(
                 transform.eulerAngles.y, m_targetQuaternion.eulerAngles.y,
-                xiStatus.rotateSpeed * Time.deltaTime
+                status.xiStatus.rotateSpeed * Time.deltaTime
             );
     }
 
@@ -296,9 +302,9 @@ public class PlayerController : Status
         {
             //狙撃モード
             if (!SnipeShotTriggerCheck()) return;
-            if (snipeCanonStatus.bulletCount <= 0) return;
-            snipeCanonStatus.recastTime = snipeCanonStatus.maxRecastTime;
-            snipeCanonStatus.bulletCount--;
+            if (status.snipeCanonStatus.bulletCount <= 0) return;
+            status.snipeCanonStatus.recastTime = status.snipeCanonStatus.maxRecastTime;
+            status.snipeCanonStatus.bulletCount--;
         }
         else
         {
@@ -309,15 +315,17 @@ public class PlayerController : Status
         Vibration.Vibrate(vibrateTime);     //バイブレーション
         if (sniperMode)
         {
-            Transform m_bullet = BulletShot(shotbullet, stickWeponSpawn);
-            m_bullet.GetComponent<SnipeBullet>().SetStatus(snipeCanonStatus);
+            Transform m_bullet = Instantiate(snipeWeponBullet).transform;
+            m_bullet.position = stickWeponSpawn.position;
+            m_bullet.forward = transform.forward;
+            m_bullet.GetComponent<SnipeBullet>().SetStatus(status.snipeCanonStatus);
         }
         else
         {
             for(int i = -1;i<Pellet();i++)
             {
-                Transform m_bullet = BulletShot(shotbullet, stickWeponSpawn);
-                m_bullet.GetComponent<StickWeponBullet>().SetStatus(straightWeponStatus);
+                Transform m_bullet = Objectspawn(stickWeponBullet, stickWeponSpawn.position, transform.rotation).transform;
+                m_bullet.GetComponent<StickWeponBullet>().SetStatus(status.straightWeponStatus);
             }
         }
     }
@@ -334,20 +342,6 @@ public class PlayerController : Status
             return true;
         else
             return false;
-    }
-
-    /// <summary>
-    /// 射撃処理
-    /// </summary>
-    /// <param name="shotBullet">弾丸のプレファブ</param>
-    /// <param name="shotTransform">弾丸の生成地点</param>
-    /// <returns></returns>
-    Transform BulletShot(GameObject shotBullet, Transform shotTransform)
-    {
-        Transform m_bullet = Instantiate(shotBullet).transform;
-        m_bullet.position = shotTransform.position;
-        m_bullet.forward = shotTransform.forward;
-        return m_bullet;
     }
 
     ///////////////////////////////ストレートウェポン関係///////////////////////////////
@@ -367,7 +361,7 @@ public class PlayerController : Status
     //散弾ノード用の処理
     int Pellet()
     {
-        return save.straightNode[5].GetLevel;
+        return status.save.straightNode[5].GetLevel;
     }
 
     ///////////////////////////////フリック入力関連///////////////////////////////
@@ -384,11 +378,10 @@ public class PlayerController : Status
         if (!Input.GetKeyDown(KeyCode.LeftShift)) return;
         if (isFlickDash) return;
         if (!FlickCountCheck()) return;
-        flickDodgeStatus.recastTime += flickDodgeStatus.usedCoolDownTime;
-        flickDodgeStatus.dodgeCount--;
+        status.flickDodgeStatus.recastTime += status.flickDodgeStatus.usedCoolDownTime;
+        status.flickDodgeStatus.dodgeCount--;
         isFlickDash = true;
         dashStartTime = Time.time;
-        flickDashRotate = transform.GetComponent<Rigidbody>().velocity/100;
         DashEffect();
 #elif UNITY_ANDROID
         foreach (Touch t in Input.touches)
@@ -404,8 +397,8 @@ public class PlayerController : Status
                     if (!FlickTimeCheck(t.fingerId)) return;
                     if (!FlickRangeCheck(t.fingerId)) return;
                     if (!FlickCountCheck()) return;
-                    //flickDodgeStatus.recastTime = flickDodgeStatus.usedCoolDownTime;
-                    flickDodgeStatus.dodgeCount--;
+                    status.flickDodgeStatus.recastTime += status.flickDodgeStatus.usedCoolDownTime;
+                    status.flickDodgeStatus.dodgeCount--;
                     isFlickDash = true;
                     dashStartTime = Time.time;
                     FlickRotateCheck(t.fingerId);
@@ -426,6 +419,7 @@ public class PlayerController : Status
     {
         dashEffect.Play();
         dashEffect.gameObject.transform.LookAt(flickDashRotate+transform.position);
+        flickeffect.EffectSpawn();
     }
 
     void FlickStart(Touch t) {
@@ -443,7 +437,7 @@ public class PlayerController : Status
     //フリックドッジの使用回数の確認を行う
     bool FlickCountCheck()
     {
-        if (flickDodgeStatus.dodgeCount <= 0) return false;
+        if (status.flickDodgeStatus.dodgeCount <= 0) return false;
         return true;
     }
     
@@ -457,18 +451,33 @@ public class PlayerController : Status
         flickDashRotate = (Input.touches[fingerID].position - flickStartPos[fingerID]).normalized;
         flickDashRotate = 
             new Vector3(
-                Mathf.Clamp(flickDashRotate.x, -1, 2),
+                Mathf.Clamp(flickDashRotate.x, -1, 1),
                 0,
-                Mathf.Clamp(flickDashRotate.y, -1, 2)
+                Mathf.Clamp(flickDashRotate.y, -1, 1)
                 );
     }
 
-    void FlickAction()　{
-        const float m_dashTime = 0.05f;
-        float m_dashSpeed = xiStatus.moveSpeed * 15;
-        playerRigidbody.AddForce(flickDashRotate * m_dashSpeed, ForceMode.Impulse);
-        if (Time.time - dashStartTime <= m_dashTime)
-            return;
+    void FlickAction() {
+        
+        RaycastHit hit;
+        Ray m_ray = new Ray(transform.position, flickDashRotate);
+        Vector3 m_dashPos = Vector3.zero;
+        if (Physics.Raycast(m_ray, out hit, status.flickDodgeStatus.flickDashRange, ~(1 << 8)))
+        {
+            m_dashPos = hit.point;
+        }
+        else { 
+            m_dashPos = transform.position + (flickDashRotate * status.flickDodgeStatus.flickDashRange);
+        }
+        RaycastHit[] hitsEnemy = Physics.SphereCastAll(m_ray,5, status.flickDodgeStatus.flickDashRange, 1 << 8);
+        foreach (RaycastHit enemy in hitsEnemy)
+        {
+            Life m_life = enemy.transform.GetComponent<Life>();
+            if (m_life!=null)
+                m_life.Damage(status.flickDodgeStatus.flickAttack);
+        }
+        transform.position = m_dashPos;
+        
         isFlickDash = false;
     }
 
@@ -516,7 +525,7 @@ public class PlayerController : Status
         const long m_vibrationLength = 150;
         transform.eulerAngles += GyroEulerAngles();
         transform.eulerAngles += SnipeRotateSlideControl();
-        ShotCheck(snipeWeponBullet,snipeCanonStatus.fireRate, m_vibrationLength);
+        ShotCheck(snipeWeponBullet, status.snipeCanonStatus.fireRate, m_vibrationLength);
         
     }
 
@@ -575,11 +584,21 @@ public class PlayerController : Status
 #endif
         m_move /= 200;
         m_move = new Vector3(-Mathf.Clamp(m_move.y,-30,30),-Mathf.Clamp(m_move.x, -30, 30));
-        if (snipeCanonStatus.option.reverseSide)
+        if (status.snipeCanonStatus.option.reverseSide)
             m_move = new Vector3(m_move.x, -m_move.y);
-        if (!snipeCanonStatus.option.reverseVertical)
+        if (!status.snipeCanonStatus.option.reverseVertical)
             m_move = new Vector3(-m_move.x, m_move.y);
         return m_move;
+    }
+
+    public void FlickUIPrint()
+    {
+        for (int i = 0; i < status.flickDodgeStatus.maxDodgeCount; i++)
+        {
+            cloneFlickIcons[i].enabled = i < status.flickDodgeStatus.dodgeCount + 1;
+        }
+        if (status.flickDodgeStatus.dodgeCount <= status.flickDodgeStatus.maxRecastTime)
+            ReCastView(cloneFlickIcons[status.flickDodgeStatus.dodgeCount], status.flickDodgeStatus.recastTime, status.flickDodgeStatus.maxRecastTime);
     }
 
     //狙撃ボタンを押したかの確認
@@ -591,7 +610,7 @@ public class PlayerController : Status
         else return false;
 #elif UNITY_ANDROID
         //押した瞬間か離れた瞬間かオプションで変更可能に
-        if (snipeCanonStatus.option.isSnipepushUpmode)
+        if (status.snipeCanonStatus.option.isSnipepushUpmode)
             return CrossPlatformInputManager.GetButtonUp(snipeButton);
         else
             return CrossPlatformInputManager.GetButtonDown(snipeButton);
@@ -659,6 +678,22 @@ public class PlayerController : Status
         playerAnimator.SetBool("Shot", m_trigger);
     }
 
+    void SnipeBulletCountPrint()
+    {
+        if (sniperMode) snipeCountTexts[1].text = status.snipeCanonStatus.bulletCount.ToString();
+        else snipeCountTexts[0].text = status.snipeCanonStatus.bulletCount.ToString();
+    }
+
+    void ReCastView(Image viewImage, float nowRecastTime, float maxRecastTime)
+    {
+        if (nowRecastTime == 0)
+            viewImage.fillAmount = 1;
+        else
+            viewImage.fillAmount = 1 - nowRecastTime / maxRecastTime;
+    }
+
+    //////////////////////////////////////////////////////////////////////
+
     public void AnimatorStop()
     {
         playerAnimator.SetFloat("X", 0);
@@ -669,10 +704,10 @@ public class PlayerController : Status
     public void FirstFlickUISetting()
     {
         float m_iconInterval = flickIcon.GetComponent<RectTransform>().sizeDelta.x / 2f;
-        float m_iconFirstPositionX = Screen.width / 2 - m_iconInterval / 2 * (flickDodgeStatus.maxDodgeCount - 1);
+        float m_iconFirstPositionX = Screen.width / 2 - m_iconInterval / 2 * (status.flickDodgeStatus.maxDodgeCount - 1);
         cloneFlickIcons.Add(flickIcon.GetComponent<Image>());
         flickIcon.transform.position = new Vector2(m_iconFirstPositionX, flickIcon.transform.position.y);
-        for (int i = 1; i < flickDodgeStatus.maxDodgeCount; i++)
+        for (int i = 1; i < status.flickDodgeStatus.maxDodgeCount; i++)
         {
             GameObject m_icon = Instantiate(flickIcon, flickIconObj.transform);
             cloneFlickIcons.Add(m_icon.GetComponent<Image>());
@@ -682,28 +717,27 @@ public class PlayerController : Status
         }
     }
 
-    public void FlickUIPrint()
+    /// <summary>
+    /// 移動関連
+    /// </summary>
+    public void MoveCheck()
     {
-        for (int i = 0; i < flickDodgeStatus.maxDodgeCount; i++)
-        {
-            cloneFlickIcons[i].enabled = i < flickDodgeStatus.dodgeCount+1;
-        }
-        if(flickDodgeStatus.dodgeCount<=flickDodgeStatus.maxRecastTime)
-            ReCastView(cloneFlickIcons[flickDodgeStatus.dodgeCount], flickDodgeStatus.recastTime, flickDodgeStatus.maxRecastTime);
-    }
-
-    void SnipeBulletCountPrint()
-    {
-        if (sniperMode) snipeCountTexts[1].text = snipeCanonStatus.bulletCount.ToString();
-        else snipeCountTexts[0].text = snipeCanonStatus.bulletCount.ToString();
-    }
-
-    void ReCastView(Image viewImage,float nowRecastTime,float maxRecastTime)
-    {
-        if (nowRecastTime == 0)
-            viewImage.fillAmount = 1;
-        else
-            viewImage.fillAmount = 1 - nowRecastTime/ maxRecastTime;
+#if UNITY_EDITOR
+        Vector2 m_moveRotate = Vector2.zero;
+        if (Input.GetKey(KeyCode.W))
+            m_moveRotate += Vector2.up;
+        else if (Input.GetKey(KeyCode.S))
+            m_moveRotate -= Vector2.up;
+        if (Input.GetKey(KeyCode.D))
+            m_moveRotate += Vector2.right;
+        else if (Input.GetKey(KeyCode.A))
+            m_moveRotate -= Vector2.right;
+        flickDashRotate = new Vector3(m_moveRotate.x,0, m_moveRotate.y);
+#elif UNITY_ANDROID
+        Vector2 m_moveRotate = GetPlayerMoveAxis();
+#endif
+        MoveAnimation(m_moveRotate);
+        Move(m_moveRotate);
     }
 
     /// <summary>
@@ -733,6 +767,25 @@ public class PlayerController : Status
     }
 
     public void KillCount() {
-        xiStatus.killCount++;
-    }    
+        status.xiStatus.killCount++;
+    }
+
+    /// <summary>
+    /// メインゲームのアクティブ化
+    /// </summary>
+    public bool GetSetisActive
+    {
+        get{
+            return isActive;
+        }
+        set
+        {
+            isActive = value;
+            foreach(GameObject obj in isActiveObject)
+            {
+                obj.SetActive(isActive);
+            }
+        }
+    }
+
 }

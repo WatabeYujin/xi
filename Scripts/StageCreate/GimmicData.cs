@@ -11,6 +11,7 @@ public class GimmicData : ScriptableObject{
         Object,
         Enemy,
         Item,
+        Required,
         None
     }
 
@@ -74,6 +75,5 @@ public class GimmicData : ScriptableObject{
             }
         }
     }
-
     public GimmicList[] gimmicList;         //ギミックのリスト
 }

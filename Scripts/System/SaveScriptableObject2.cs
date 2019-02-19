@@ -31,7 +31,7 @@ public class SaveScriptableObject2 : ScriptableObject
 
     public bool isChanged = false;                  //変更を加えたか否か
 
-    private int flagCredit = 0;                     //通貨
+    public int flagCredit = 0;                     //通貨
 
     public void UpdateScriptableObject(SaveData.FromJsonSaveData loadSaveData)
     {

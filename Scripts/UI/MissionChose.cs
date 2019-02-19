@@ -6,7 +6,6 @@ using DG.Tweening;
 using UnityEngine.SceneManagement;
 
 public class MissionChose : MonoBehaviour {
-    private string sceneName;
     [SerializeField]
     private GameObject yesButton;
     [SerializeField]
@@ -15,12 +14,50 @@ public class MissionChose : MonoBehaviour {
     private Image Window;
     [SerializeField]
     private FadeInOut fadeInOut;
+    [SerializeField]
+    private SaveScriptableObject2 save;
+    [SerializeField]
+    private StageData stageData;
+    [SerializeField]
+    private GameObject content;
+    [SerializeField]
+    private Transform contentParent;
+    [SerializeField]
+    private CreateStageData loadstage;
 
-    private AsyncOperation loadScene;
+    private List<GameObject> spawnStageContents = new List<GameObject>();
+    
+    private CreateStageData selectStageData;
 
-    public void MissionButton(string m_sceneName)
+    public void Awake()
     {
-        sceneName = m_sceneName;
+        MissionListOpen();
+    }
+
+    private void MissionListOpen()
+    {
+        foreach (GameObject spawn in spawnStageContents)
+        {
+            Destroy(spawn);
+        }
+        for (int i = stageData.stageList.Length-1; i >= 0; i--)
+        {
+            //ミッションが受注可能か調べる
+            Debug.Log(i);
+            if (stageData.stageList[i].GetStageRunk > save.missionProgress)
+                continue;   //ランクが足りない場合、次のステージ
+
+            GameObject m_contentObj = Instantiate(content, contentParent);
+            spawnStageContents.Add(m_contentObj);
+            m_contentObj.GetComponent<StageContent>().StageTextSet(stageData.stageList[i].GetNodeName, stageData.stageList[i].GetNodeDetails);
+            //ラムダ式でないと引数付きイベントが設定できないので
+            CreateStageData m_stagedata = stageData.stageList[i].GetStageData;
+            m_contentObj.GetComponent<Button>().onClick.AddListener(() => { this.MissionButton(m_stagedata); });
+        }
+    }
+    public void MissionButton(CreateStageData selectstage)
+    {
+        selectStageData = selectstage;
         StartCoroutine(UIMove(false));
     }
 
@@ -62,9 +99,11 @@ public class MissionChose : MonoBehaviour {
     IEnumerator SceneMove()
     {
         const float m_time = 0.5f;
+        const string m_loadScene ="PlayStage";
 
+        loadstage.CloneScriptableObject(selectStageData);
         fadeInOut.FadeInEvent(m_time);
         yield return new WaitForSeconds(m_time);
-        SceneManager.LoadScene(sceneName);
+        SceneManager.LoadScene(m_loadScene);
     }
 }

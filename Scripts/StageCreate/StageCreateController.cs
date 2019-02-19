@@ -1,17 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using DG.Tweening;
 
 public class StageCreateController : MonoBehaviour
 {
-
-    [SerializeField]
-    private GameObject test;
     private bool isfloorSelectActive = false;
     [SerializeField]
     private GameObject activeSelectFloorObj;
+    [SerializeField]
+    private StageSpawn stagespawn;
     [SerializeField]
     private Camera mainCamera;
     [SerializeField]
@@ -20,27 +20,47 @@ public class StageCreateController : MonoBehaviour
     private Vector2 maxRange;
     [SerializeField]
     private GameObject[] UiWindows;
+    [SerializeField]
+    private Text gimmicText;
+    [SerializeField]
+    private Image gimmicImage;
+    [SerializeField]
+    private RectTransform gimmicrotateImage;
+    [SerializeField]
+    private GimmicData gimmicData;
+    [SerializeField]
+    private TalkControl talk;
+    [SerializeField]
+    private GameObject stagemenu;
+    [SerializeField]
+    private PlayerController plcont;
+    [SerializeField]
+    private FadeInOut fade;
+
     private Vector2 nowTouchPosition;
     private Vector2 oldMovePos;
     private Vector2[] firstUiPositions = new Vector2[2];
     private List<Vector2> touchPos;
-    [SerializeField]
-    private int mode = 0;
-    [SerializeField]
-    private StageSpawn stagespawn;
-    private Touch[] touch;
     private Vector3 oldCameraPos;
+    private Touch[] touch;
     private int setObjID = 0;
-    private float floorScale = 5;
+    private int gimmicRotate = 0;
+    private int mode = 0;
+    bool isActive = true;
+
+    private const float floorScale = 5;
 
     void Start()
     {
         firstUiPositions[0] = UiWindows[0].transform.position;
         firstUiPositions[1] = UiWindows[1].transform.position;
+        GimmicButton(0);                                        //選択IDを0にするため
     }
 
     void Update()
     {
+        if (!isActive)
+            return;
         if (mode == 100)
         {
             StageAllViewMode_CameraMove();
@@ -54,11 +74,12 @@ public class StageCreateController : MonoBehaviour
         }
         ModeCheck();
     }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     void PointUp()
     {
 #if UNITY_EDITOR
-        if (Input.GetMouseButtonUp(0))
+        if (Input.GetMouseButtonUp(0)|| Input.GetMouseButtonUp(1))
 #elif UNITY_ANDROID
         if (Input.touchCount == 0)
 #endif
@@ -69,7 +90,8 @@ public class StageCreateController : MonoBehaviour
             if (!isfloorSelectActive) return;
             isfloorSelectActive = false;
             activeSelectFloorObj.SetActive(false);
-            FloorSet(nowTouchPosition);
+            PositionIDSet(nowTouchPosition);
+            //FloorSet(nowTouchPosition);
         }
     }
 
@@ -176,92 +198,7 @@ public class StageCreateController : MonoBehaviour
         }
         activeSelectFloorObj.transform.position = new Vector3(nowTouchPosition.x, -2.25f, nowTouchPosition.y);
     }
-
-    /// <summary>
-    /// カメラの移動範囲制限
-    /// </summary>
-    Vector3 RangeRimit(Vector3 movePos)
-    {
-        if (movePos.x < minRange.x)
-            movePos = new Vector3(minRange.x, movePos.y, movePos.z);
-        if (movePos.z < minRange.y)
-            movePos = new Vector3(movePos.x, movePos.y, minRange.y);
-        if (movePos.x > maxRange.x)
-            movePos = new Vector3(maxRange.x, movePos.y, movePos.z);
-        if (movePos.z > maxRange.y)
-            movePos = new Vector3(movePos.x, movePos.y, maxRange.y);
-        return movePos;
-    }
-
-    /// <summary>
-    /// 選択されたフロアにオブジェクトを生成する
-    /// </summary>
-    /// <param name="pos">生成する座標</param>
-    void FloorSet(Vector2 pos)
-    {
-        Debug.Log("生成");
-        GameObject obj = Instantiate(test);
-        obj.transform.position = new Vector3(pos.x, 0, pos.y);
-    }
-
-    /// <summary>
-    /// 選択中のフロアの強調表示
-    /// </summary>
-    /// <param name="hitPos">選択中の座標</param>
-    /// <returns>選択したフロアの座標</returns>
-    Vector2 FloorPosCheck(Vector2 hitPos)
-    {
-        Vector2 m_minLimitPos = new Vector2(0, 0);
-        Vector2 m_maxLimitPos = new Vector2(200, 200);
-        if ((int)hitPos.x <= m_minLimitPos.x)
-            return new Vector2(-1, -1);
-        if ((int)hitPos.y <= m_minLimitPos.y)
-            return new Vector2(-1, -1);
-        if ((int)hitPos.x >= m_maxLimitPos.x)
-            return new Vector2(-1, -1);
-        if ((int)hitPos.y >= m_maxLimitPos.y)
-            return new Vector2(-1, -1);
-        //0～5だったら2.5
-        //それ以外だったら7.5
-        float m_firstDigitX = (int)hitPos.x % 10;
-        float m_firstDigitY = (int)hitPos.y % 10;
-        hitPos = new Vector2((int)hitPos.x - m_firstDigitX, (int)hitPos.y - m_firstDigitY);
-        if (m_firstDigitX <= 5)
-            m_firstDigitX = floorScale / 2;
-        else
-            m_firstDigitX = floorScale * 1.5f;
-        if (m_firstDigitY <= 5)
-            m_firstDigitY = floorScale / 2;
-        else
-            m_firstDigitY = floorScale * 1.5f;
-        hitPos = new Vector2(hitPos.x + m_firstDigitX, hitPos.y + m_firstDigitY);
-        return hitPos;
-    }
-
-    /// <summary>
-    /// UIを触れているか判定
-    /// </summary>
-    /// <returns>触れていた場合trueを返す</returns>
-    bool IsExist()
-    {
-        if (!Input.GetMouseButtonDown(0))
-            return false;
-        EventSystem current = EventSystem.current;
-        PointerEventData eventData = new PointerEventData(current)
-        {
-#if UNITY_EDITOR
-            position = Input.mousePosition
-#elif UNITY_ANDROID
-            position = Input.touches[0].position
-#endif
-        };
-        List<RaycastResult> raycastResults = new List<RaycastResult>();
-        current.RaycastAll(eventData, raycastResults);
-        bool isExist = 0 < raycastResults.Count;
-        return isExist;
-
-    }
-
+        
     /// <summary>
     /// UIのフェードイン・アウトを行う
     /// </summary>
@@ -299,11 +236,124 @@ public class StageCreateController : MonoBehaviour
         }
     }
 
+    void PositionIDSet(Vector2 pos)
+    {
+        int m_x, m_y;
+        pos -= new Vector2(floorScale / 2, floorScale / 2);
+        m_x = (int)Mathf.Abs(pos.x / floorScale);
+        m_y = (int)Mathf.Abs(pos.y / floorScale);
+        if (!stagespawn.RequiredCheck(m_x, m_y))
+        {
+            stagespawn.StageObjUpdate(m_x, m_y, setObjID, gimmicRotate);
+        }
+        else
+            talk.TalkSet("必須ギミックの為、消去・上書きはできません。", 1, 1, 1, true);
+
+    }
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    /// <summary>
+    /// UIを触れているか判定
+    /// </summary>
+    /// <returns>触れていた場合trueを返す</returns>
+    bool IsExist()
+    {
+        if (!Input.GetMouseButtonDown(0))
+            return false;
+        EventSystem current = EventSystem.current;
+        PointerEventData eventData = new PointerEventData(current)
+        {
+#if UNITY_EDITOR
+            position = Input.mousePosition
+#elif UNITY_ANDROID
+            position = Input.touches[0].position
+#endif
+        };
+        List<RaycastResult> raycastResults = new List<RaycastResult>();
+        current.RaycastAll(eventData, raycastResults);
+        bool isExist = 0 < raycastResults.Count;
+        return isExist;
+
+    }
+
+    /// <summary>
+    /// 選択中のフロアの強調表示
+    /// </summary>
+    /// <param name="hitPos">選択中の座標</param>
+    /// <returns>選択したフロアの座標</returns>
+    Vector2 FloorPosCheck(Vector2 hitPos)
+    {
+        Vector2 m_minLimitPos = new Vector2(0, 0);
+        Vector2 m_maxLimitPos = new Vector2(100, 100);
+        if ((int)hitPos.x <= m_minLimitPos.x)
+            return new Vector2(-1, -1);
+        if ((int)hitPos.y <= m_minLimitPos.y)
+            return new Vector2(-1, -1);
+        if ((int)hitPos.x >= m_maxLimitPos.x)
+            return new Vector2(-1, -1);
+        if ((int)hitPos.y >= m_maxLimitPos.y)
+            return new Vector2(-1, -1);
+        //0～5だったら2.5
+        //それ以外だったら7.5
+        float m_firstDigitX = (int)hitPos.x % 10;
+        float m_firstDigitY = (int)hitPos.y % 10;
+        hitPos = new Vector2((int)hitPos.x - m_firstDigitX, (int)hitPos.y - m_firstDigitY);
+        if (m_firstDigitX <= 5)
+            m_firstDigitX = floorScale / 2;
+        else
+            m_firstDigitX = floorScale * 1.5f;
+        if (m_firstDigitY <= 5)
+            m_firstDigitY = floorScale / 2;
+        else
+            m_firstDigitY = floorScale * 1.5f;
+        hitPos = new Vector2(hitPos.x + m_firstDigitX, hitPos.y + m_firstDigitY);
+        return hitPos;
+    }
+
+    /// <summary>
+    /// カメラの移動範囲制限
+    /// </summary>
+    Vector3 RangeRimit(Vector3 movePos)
+    {
+        if (movePos.x < minRange.x)
+            movePos = new Vector3(minRange.x, movePos.y, movePos.z);
+        if (movePos.z < minRange.y)
+            movePos = new Vector3(movePos.x, movePos.y, minRange.y);
+        if (movePos.x > maxRange.x)
+            movePos = new Vector3(maxRange.x, movePos.y, movePos.z);
+        if (movePos.z > maxRange.y)
+            movePos = new Vector3(movePos.x, movePos.y, maxRange.y);
+        return movePos;
+    }
+
+    public void StageMenuOpenCloase(bool isopen)
+    {
+        stagespawn.StageSet();
+        isActive = isopen;
+        stagemenu.SetActive(isopen);
+        mainCamera.gameObject.SetActive(isopen);
+        fade.FadeOutEvent(0.2f);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void GimmicButton(int ID)
+    {
+        setObjID = ID;
+        gimmicText.text = gimmicData.gimmicList[ID].GetGimmicName + "\n" + gimmicData.gimmicList[ID].GetGimmicDetails;
+        gimmicImage.sprite = gimmicData.gimmicList[ID].GetGimmicImage;
+    }
+
     public void ViewAllStage()
     {
         const float m_moveSpeed = 0.5f;
         const float m_height = 30;
-        Vector3 m_movePos = new Vector3(90, 185, 100);
+        Vector3 m_movePos = new Vector3(45, 95, 50);
         if (mode == 100)
         {
 
@@ -318,20 +368,20 @@ public class StageCreateController : MonoBehaviour
             oldCameraPos = mainCamera.transform.position;
             mainCamera.transform.DOMove(m_movePos, m_moveSpeed);
         }
-
     }
 
-    public void GimmicButton(int ID)
+    public void TestMode()
     {
-        setObjID = ID;
+        plcont.GetSetisActive = !plcont.GetSetisActive;
+        StageMenuOpenCloase(!plcont.GetSetisActive);
     }
 
-    void PositionIDSet(Vector2 pos)
+
+    public void GimmicRotateButton()
     {
-        int m_x, m_y;
-        pos -= new Vector2(floorScale / 2, floorScale / 2);
-        m_x = (int)Mathf.Abs(pos.x / floorScale);
-        m_y = (int)Mathf.Abs(pos.y / floorScale);
-        stagespawn.StageObjUpdate(m_x, m_y,setObjID);
+        gimmicRotate += 90;
+        if (gimmicRotate >= 360)
+            gimmicRotate = 0;
+        gimmicrotateImage.DORotate(Vector3.forward * -gimmicRotate, 0.2f);
     }
 }
