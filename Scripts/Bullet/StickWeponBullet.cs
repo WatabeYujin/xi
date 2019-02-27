@@ -49,16 +49,15 @@ public class StickWeponBullet : ObjectPool
     void StartBulletMove() {
         bounceCount = save.straightNode[0].GetLevel;
         throughCount = save.straightNode[1].GetLevel;
+        BulletSize();
         if (throughCount >= 1)
             thisCollider.isTrigger = true;
         else if (bounceCount >= 1)
             thisCollider.material = bounceMat;
         if (thisRigidbody == null) return;
         thisRigidbody.isKinematic = false;
-        thisRigidbody.AddForce(
-            transform.forward * straightWeponStatus.bulletSpeed * baseBulletSpeed +
-            transform.right * Recoil()  * baseBulletSpeed / 2
-        );
+        StraightAddForce();
+        thisRigidbody.AddForce(transform.right * Recoil() * baseBulletSpeed / 2);
     }
 
     /// <summary>
@@ -66,10 +65,10 @@ public class StickWeponBullet : ObjectPool
     /// </summary>
     /// <returns>ブレの大きさ（float）を返す</returns>
     float Recoil() {
-        float m_recoil = 0;
+        
         const float m_baseDiminution = 2f;
         if (straightWeponStatus.recoil == 0) return 0;
-        m_recoil = Random.Range(-straightWeponStatus.recoil, straightWeponStatus.recoil);
+        float m_recoil = Random.Range(-straightWeponStatus.recoil, straightWeponStatus.recoil);
         m_recoil /= (m_baseDiminution + save.straightNode[10].GetLevel);
         return m_recoil;
     }
@@ -87,7 +86,10 @@ public class StickWeponBullet : ObjectPool
     /// <returns>射程内ならfalse 射程外ならtrueを返す</returns>
     bool BulletRangeCheck()
     {
-        if ((transform.position - bulletSpawnPosition).magnitude >= straightWeponStatus.bulletRange)
+        const float m_levelMagnification = 5;
+        float m_range = 0;
+        m_range = straightWeponStatus.bulletRange + (save.straightNode[2].GetLevel* m_levelMagnification);
+        if ((transform.position - bulletSpawnPosition).magnitude >= m_range)
             return true;
         else return false;
     }
@@ -107,6 +109,15 @@ public class StickWeponBullet : ObjectPool
         gameObject.SetActive(false);
     }
 
+    void BulletSize()
+    {
+        const float m_baseScale = 0.2f;
+        const float m_baseTrailScale = 0.3f;
+        float m_scale = m_baseScale * save.straightNode[4].GetLevel;
+        transform.localScale = Vector3.one + Vector3.one  * m_scale;
+        trailRenderer.startWidth = m_scale / 3 + m_baseTrailScale;
+    }
+
     void EffectSpawn()
     {
         Transform m_hitEffect = Objectspawn(hitEffect, transform.position, transform.rotation).transform;
@@ -122,6 +133,14 @@ public class StickWeponBullet : ObjectPool
         hitTransform = col.transform;
         HitEvent();
     }
+
+
+    void OnTriggerExit(Collider col)
+    {
+        ThroughEffectRescission();
+    }
+
+
 
     void HitEvent()
     {
@@ -144,6 +163,16 @@ public class StickWeponBullet : ObjectPool
         }
     }
     
+    //直進の加速の際に呼び出す
+    void StraightAddForce()
+    {
+        float m_addBulletSpeed=2f;
+
+        m_addBulletSpeed *= save.straightNode[3].GetLevel;
+        thisRigidbody.AddForce(
+            transform.forward * (straightWeponStatus.bulletSpeed * baseBulletSpeed + m_addBulletSpeed)
+        );
+    }
 
     /// <summary>
     /// 命中時の弾丸の効果を調べる
@@ -166,14 +195,20 @@ public class StickWeponBullet : ObjectPool
     void ThroughEffect() {
         damageBoost += 0.2f;
         throughCount--;
-        //貫通回数がなくなった場合
-        if (throughCount <= 0)
-        {
-            thisCollider.isTrigger = false;
-            //もし跳弾が可能だった場合、マテリアルを適用する。
-            if(bounceCount > 0)
-                thisCollider.material = bounceMat;
-        }
+    }
+
+    //貫通効果解除の際の処理
+    void ThroughEffectRescission()
+    {
+        if (!thisCollider.isTrigger)
+            return;
+        if (throughCount > 0)
+            return;
+
+        thisCollider.isTrigger = false;
+        //もし跳弾が可能だった場合、マテリアルを適用する。
+        if (bounceCount > 0)
+            thisCollider.material = bounceMat;
     }
 
     //跳弾効果付加時の処理

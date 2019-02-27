@@ -72,8 +72,9 @@ public class Status : MonoBehaviour {
         public float recastTime = 2;            //現在のリキャストタイム
         public float maxRecastTime = 2;         //最大リキャストタイム
         public float usedCoolDownTime = 0.5f;   //使用回数のクールダウン開始までの時間
-        public float flickDashRange = 10f;       //最大移動距離
+        public float flickDashRange = 10f;      //最大移動距離
         public int flickAttack = 75;            //通過した敵へのダメージ
+        public float flickAttackSize = 1f;      //攻撃判定の広さ
     }
 
     //スナイプカノンステータス

@@ -69,6 +69,7 @@ public class PlayerController : ObjectPool
     private const string straightShotButton = "StraightShot";           //射撃ボタン
     private const string snipeButton = "SnipeShot";     //狙撃ボタン
     
+    [SerializeField]
     private List<Image> cloneFlickIcons = new List<Image>();                //生成したアイコン
     private float lastShotTime;                         //最後にスティックウェポンを撃った時間
     private float[] flickStartTime = new float[10];     //フリックし始めた時間
@@ -126,6 +127,10 @@ public class PlayerController : ObjectPool
     /// </summary>
     private void SetAutorotate()
     {
+        status.flickDodgeStatus.maxDodgeCount = 3 + status.save.flickDodgeNode[3].GetLevel;
+        status.flickDodgeStatus.dodgeCount= status.flickDodgeStatus.maxDodgeCount;
+        status.snipeCanonStatus.maxBulletCount= 3 + status.save.snipeCannonNode[0].GetLevel;
+        status.snipeCanonStatus.bulletCount = status.snipeCanonStatus.maxBulletCount;
         Input.gyro.enabled = true;
         Screen.autorotateToPortraitUpsideDown = false;
 #if UNITY_ANDROID
@@ -133,6 +138,7 @@ public class PlayerController : ObjectPool
 #endif
         Screen.autorotateToLandscapeRight = true;
         Screen.autorotateToLandscapeLeft = true;
+
     }
 
     /// <summary>
@@ -155,7 +161,7 @@ public class PlayerController : ObjectPool
         if (isDodge &&
             status.flickDodgeStatus.dodgeCount < status.flickDodgeStatus.maxDodgeCount)
         {
-            status.flickDodgeStatus.recastTime -= m_time;
+            status.flickDodgeStatus.recastTime -= m_time*(status.save.flickDodgeNode[3].GetLevel+1);
             if (status.flickDodgeStatus.recastTime < 0)
             {
                 status.flickDodgeStatus.dodgeCount++;
@@ -166,7 +172,7 @@ public class PlayerController : ObjectPool
             status.snipeCanonStatus.bulletCount < status.snipeCanonStatus.maxBulletCount &&
             status.snipeCanonStatus.recastTime > 0)
         {
-            status.snipeCanonStatus.recastTime -= m_time;
+            status.snipeCanonStatus.recastTime -= m_time * (status.save.snipeCannonNode[1].GetLevel + 1);
             ReCastView(snipeRecastImage, status.snipeCanonStatus.recastTime, status.snipeCanonStatus.maxRecastTime);
             if (status.snipeCanonStatus.recastTime <= 0)
             {
@@ -316,6 +322,7 @@ public class PlayerController : ObjectPool
         if (sniperMode)
         {
             Transform m_bullet = Instantiate(snipeWeponBullet).transform;
+            m_bullet.localScale = Vector3.one * (status.save.snipeCannonNode[1].GetLevel*0.2f);
             m_bullet.position = stickWeponSpawn.position;
             m_bullet.forward = transform.forward;
             m_bullet.GetComponent<SnipeBullet>().SetStatus(status.snipeCanonStatus);
@@ -462,23 +469,39 @@ public class PlayerController : ObjectPool
         RaycastHit hit;
         Ray m_ray = new Ray(transform.position, flickDashRotate);
         Vector3 m_dashPos = Vector3.zero;
-        if (Physics.Raycast(m_ray, out hit, status.flickDodgeStatus.flickDashRange, ~(1 << 8)))
+        float m_range = status.flickDodgeStatus.flickDashRange;
+        float m_attackSize= status.flickDodgeStatus.flickAttackSize;
+        m_range += 1f * status.save.flickDodgeNode[0].GetLevel;
+        m_attackSize += 0.2f * status.save.flickDodgeNode[4].GetLevel;
+        if (Physics.Raycast(m_ray, out hit, m_range, ~(1 << 10)))
         {
             m_dashPos = hit.point;
         }
         else { 
-            m_dashPos = transform.position + (flickDashRotate * status.flickDodgeStatus.flickDashRange);
+            m_dashPos = transform.position + (flickDashRotate * m_range);
         }
-        RaycastHit[] hitsEnemy = Physics.SphereCastAll(m_ray,5, status.flickDodgeStatus.flickDashRange, 1 << 8);
-        foreach (RaycastHit enemy in hitsEnemy)
-        {
-            Life m_life = enemy.transform.GetComponent<Life>();
-            if (m_life!=null)
-                m_life.Damage(status.flickDodgeStatus.flickAttack);
-        }
+        FlickAttack(Physics.SphereCastAll(m_ray,m_attackSize, m_range, 1 << 10));
+
         transform.position = m_dashPos;
         
         isFlickDash = false;
+    }
+
+    /// <summary>
+    /// フリックダッシュ時の攻撃処理
+    /// </summary>
+    /// <param name="hitsEnemy">命中した敵の配列</param>
+    void FlickAttack(RaycastHit[] hitsEnemy)
+    {
+        int m_damage = status.flickDodgeStatus.flickAttack;
+        m_damage += (int)(0.2f * status.save.flickDodgeNode[1].GetLevel * m_damage);
+        foreach (RaycastHit enemy in hitsEnemy)
+        {
+            Life m_life = enemy.transform.GetComponent<Life>();
+            if (m_life != null)
+                m_life.Damage(m_damage);
+        }
+
     }
 
     //スナイパーモード用
@@ -597,7 +620,7 @@ public class PlayerController : ObjectPool
         {
             cloneFlickIcons[i].enabled = i < status.flickDodgeStatus.dodgeCount + 1;
         }
-        if (status.flickDodgeStatus.dodgeCount <= status.flickDodgeStatus.maxRecastTime)
+        if (status.flickDodgeStatus.dodgeCount < status.flickDodgeStatus.maxDodgeCount)
             ReCastView(cloneFlickIcons[status.flickDodgeStatus.dodgeCount], status.flickDodgeStatus.recastTime, status.flickDodgeStatus.maxRecastTime);
     }
 
@@ -703,17 +726,11 @@ public class PlayerController : ObjectPool
     //UIコントロール
     public void FirstFlickUISetting()
     {
-        float m_iconInterval = flickIcon.GetComponent<RectTransform>().sizeDelta.x / 2f;
-        float m_iconFirstPositionX = Screen.width / 2 - m_iconInterval / 2 * (status.flickDodgeStatus.maxDodgeCount - 1);
         cloneFlickIcons.Add(flickIcon.GetComponent<Image>());
-        flickIcon.transform.position = new Vector2(m_iconFirstPositionX, flickIcon.transform.position.y);
         for (int i = 1; i < status.flickDodgeStatus.maxDodgeCount; i++)
         {
             GameObject m_icon = Instantiate(flickIcon, flickIconObj.transform);
             cloneFlickIcons.Add(m_icon.GetComponent<Image>());
-            float m_iconPos =
-                m_iconInterval * i + m_iconFirstPositionX;
-            m_icon.transform.position=new Vector3(m_iconPos, flickIcon.transform.position.y);
         }
     }
 

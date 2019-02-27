@@ -125,8 +125,8 @@ public class EnemyAction : ObjectPool
         thisRigidbody.velocity = m_moveVelocity * speed;
     }
     
+    //発見判定
     bool FindCheck() {
-
         if ((transform.position - playerController.transform.position).magnitude > findRange)
             return false;
         Ray m_ray = new Ray(transform.position, playerController.transform.position-transform.position);

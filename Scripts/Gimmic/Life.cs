@@ -20,10 +20,10 @@ public class Life : MonoBehaviour {
 
     [SerializeField]
     private TalkControl talkControl;
-
-    [SerializeField]
+    
+    [SerializeField,HideInInspector]
     private List<Renderer> renderers;
-    [SerializeField]
+    [SerializeField, HideInInspector]
     private List<Color> emmisionColors;
 
     private string emmisionColor = "_EmissionColor";
