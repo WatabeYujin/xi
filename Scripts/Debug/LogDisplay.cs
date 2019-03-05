@@ -18,7 +18,7 @@ public class LogDisplay : MonoBehaviour
 
     private void HandleLog(string logText, string stackTrace, LogType type)
     {
-        if(message==null)
+        if(message!=null)
             message.text = logText;
     }
 }

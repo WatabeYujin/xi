@@ -21,6 +21,8 @@ public class StageSpawn : MonoBehaviour {
     private Transform goal;
     [SerializeField]
     private Text costText;
+    [SerializeField]
+    private FadeInOut fade;
 
     private int totalcost = 0;
 
@@ -47,6 +49,7 @@ public class StageSpawn : MonoBehaviour {
     private IEnumerator LoadStage()
     {
         yield return StageLoad();
+        fade.FadeOutEvent(0.5f);
         playerController.GetSetisActive=true;
     }
 

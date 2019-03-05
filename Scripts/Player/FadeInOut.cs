@@ -6,10 +6,13 @@ using UnityEngine.UI;
 
 public class FadeInOut : MonoBehaviour {
     [SerializeField]
+    private bool startFadeIn = true;
+    [SerializeField]
     private Image fadeImage;
     const string m_AlphaPropertieName = "_Alpha";
     private void Start()
     {
+        if (!startFadeIn) return;
         FadeOutEvent(0.3f);
     }
 
